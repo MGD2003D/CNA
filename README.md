@@ -1,0 +1,212 @@
+# Отчет по лабораторной работе №1
+
+ ## Часть 1: Логирование
+
+ ### Настройка среды с Docker Compose
+
+1. Создание файла `docker-compose.yml`
+    <details>
+    <summary>Содержимое</summary>
+
+    ```yml
+    services:
+    nextcloud:
+        image: nextcloud:29.0.6
+        container_name: nextcloud
+        ports:
+        - "8080:80"
+        volumes:
+        - nc-data:/var/www/html/data
+
+    loki:
+        image: grafana/loki:2.9.0
+        container_name: loki
+        ports:
+        - "3100:3100"
+        command: -config.file=/etc/loki/local-config.yaml
+
+    promtail:
+        image: grafana/promtail:2.9.0
+        container_name: promtail
+        volumes:
+        - nc-data:/opt/nc_data
+        - ./promtail_config.yml:/etc/promtail/config.yml
+        command: -config.file=/etc/promtail/config.yml
+
+    grafana:
+        image: grafana/grafana:11.2.0
+        container_name: grafana
+        environment:
+        - GF_PATHS_PROVISIONING=/etc/grafana/provisioning
+        - GF_AUTH_ANONYMOUS_ENABLED=true
+        - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+        command: /run.sh
+        ports:
+        - "3000:3000"
+
+    postgres-zabbix:
+        image: postgres:15
+        container_name: postgres-zabbix
+        environment:
+        POSTGRES_USER: zabbix
+        POSTGRES_PASSWORD: zabbix
+        POSTGRES_DB: zabbix
+        volumes:
+        - zabbix-db:/var/lib/postgresql/data
+        healthcheck:
+        test: ["CMD", "pg_isready", "-U", "zabbix"]
+        interval: 10s
+        retries: 5
+        start_period: 5s
+
+    zabbix-server:
+        image: zabbix/zabbix-server-pgsql:ubuntu-6.4-latest
+        container_name: zabbix-back
+        ports:
+        - "10051:10051"
+        depends_on:
+        - postgres-zabbix
+        environment:
+        POSTGRES_USER: zabbix
+        POSTGRES_PASSWORD: zabbix
+        POSTGRES_DB: zabbix
+        DB_SERVER_HOST: postgres-zabbix
+
+    zabbix-web-nginx-pgsql:
+        image: zabbix/zabbix-web-nginx-pgsql:ubuntu-6.4-latest
+        container_name: zabbix-front
+        ports:
+        - "8082:8080"
+        depends_on:
+        - postgres-zabbix
+        environment:
+        POSTGRES_USER: zabbix
+        POSTGRES_PASSWORD: zabbix
+        POSTGRES_DB: zabbix
+        DB_SERVER_HOST: postgres-zabbix
+        ZBX_SERVER_HOST: zabbix-back
+
+    volumes:
+    nc-data:
+    zabbix-db:
+    ```
+
+    </details><br>
+
+2. Создание `promtail_config.yml`
+    <details>
+    <summary>Содержимое</summary>
+
+    ```yml
+    server:
+    http_listen_port: 9080
+    grpc_listen_port: 0
+    positions:
+    filename: /tmp/positions.yaml
+    clients:
+    - url: http://loki:3100/loki/api/v1/push # адрес Loki, куда будут слаться логи
+    scrape_configs:
+    - job_name: system # любое имя
+    static_configs:
+    - targets:
+    - localhost # т.к. монтируем папку с логами прямо в контейнер Loki, он собирает логи со своей локальной файловой системы
+    labels:
+    job: nextcloud_logs # любое имя, по этому полю будет осуществляться индексирование
+    __path__: /opt/nc_data/*.log # необязательно указывать полный путь, главное сказать где искать log файлы
+    ```
+
+    </details><br>
+
+1. Запуск `compose` файла
+   ```bash
+   $ sudo docker compose up -d
+
+   [+] Running 8/8
+    ✔ Network lab1_default       Created                                      0.1s 
+    ✔ Container postgres-zabbix  Started                                      1.8s 
+    ✔ Container nextcloud        Started                                      1.8s 
+    ✔ Container loki             Started                                      1.5s 
+    ✔ Container promtail         Started                                      1.9s 
+    ✔ Container grafana          Started                                      1.5s 
+    ✔ Container zabbix-front     Started                                      4.1s 
+    ✔ Container zabbix-back      Started                                      3.9s 
+
+   $ sudo docker ps
+
+   CONTAINER ID   IMAGE                                             COMMAND                  CREATED         STATUS                   PORTS                                                   NAMES
+   6b91c19f9bb1   zabbix/zabbix-server-pgsql:ubuntu-6.4-latest      "/usr/bin/tini -- /u…"   2 minutes ago   Up 2 minutes             0.0.0.0:10051->10051/tcp, :::10051->10051/tcp           zabbix-back
+   3b3206a9bb7b   zabbix/zabbix-web-nginx-pgsql:ubuntu-6.4-latest   "docker-entrypoint.sh"   2 minutes ago   Up 2 minutes             8443/tcp, 0.0.0.0:8082->8080/tcp, [::]:8082->8080/tcp   zabbix-front
+   ecf4f696fad6   nextcloud:29.0.6                                  "/entrypoint.sh apac…"   2 minutes ago   Up 2 minutes             0.0.0.0:8080->80/tcp, [::]:8080->80/tcp                 nextcloud
+   27fcd45c7fa2   postgres:15                                       "docker-entrypoint.s…"   2 minutes ago   Up 2 minutes (healthy)   5432/tcp                                                postgres-zabbix
+   9b8d24e03b8c   grafana/loki:2.9.0                                "/usr/bin/loki -conf…"   2 minutes ago   Up 2 minutes             0.0.0.0:3100->3100/tcp, :::3100->3100/tcp               loki
+   f0b08ecb8928   grafana/grafana:11.2.0                            "/run.sh /run.sh"        2 minutes ago   Up 2 minutes             0.0.0.0:3000->3000/tcp, :::3000->3000/tcp               grafana
+
+   $ ls -la
+
+   total 16
+   drwxrwxr-x 2 mgd2003d mgd2003d 4096 Oct  9 14:56 .
+   drwxrwxr-x 4 mgd2003d mgd2003d 4096 Oct  9 15:47 ..
+   -rw-rw-r-- 1 mgd2003d mgd2003d 1910 Oct  9 15:16 docker-compose.yml
+   -rw-rw-r-- 1 mgd2003d mgd2003d  808 Oct  9 14:57 promtail_config.yml
+
+   ```
+
+   *`nc_data` и `zabbix_db` создаются Docker'ом как volumes и не отображаются в локальной файловой системе по умолчанию*
+
+   ```bash
+   $ sudo docker volume ls
+   DRIVER    VOLUME NAME
+   local     2ff3a7280c3a8a3b1d28217c1d90583f74f9004f716d9b145754d5e3fdcf8e90
+   local     8317de901fa64b3c48cb3734e420f2f212fda99a6f28cad8ebebefa8fa6c9323
+   local     45538a786fc0f0176df3f6606bf0039efcc31bf3f42b70fc2372628e3a7d2c7f
+   local     5352620a4425d308aa0ef81d5f45a32efd91e29945accb8dd53ab62bb02ba915
+   local     d93e9b16c8f61f34998501ba2026dbfd4a24fdd6ef1ee139f00fcfddb5433188
+   local     e229a81597ea39a2adcd31f6b6906fe1084a35af7f2cfb54669786331a03cf04
+   local     lab1_nc-data
+   local     lab1_zabbix-db
+
+   ```
+4. Инициализация `Nextcloud`
+    <details>
+    <summary>Изображение</summary>
+
+    ![браузер](images/img1.png)
+    </details>
+
+
+
+    <details>
+
+    <summary>Логи</summary>
+
+    ```bash
+    $ sudo docker logs promtail
+    level=info ts=2024-10-09T16:07:27.317250063Z caller=promtail.go:133 msg="Reloading configuration file" md5sum=2c8ba9ad5647669e9f64bdad5fed7eae
+    level=info ts=2024-10-09T16:07:27.320747938Z caller=server.go:322 http=[::]:9080 grpc=[::]:38851 msg="server listening on addresses"
+    level=info ts=2024-10-09T16:07:27.335082334Z caller=main.go:174 msg="Starting Promtail" version="(version=2.9.0, branch=HEAD, revision=2feb64f69)"
+    level=warn ts=2024-10-09T16:07:27.335157306Z caller=promtail.go:263 msg="enable watchConfig"
+    level=info ts=2024-10-09T16:07:32.322656725Z caller=filetargetmanager.go:361 msg="Adding target" key="/opt/nc_data/*.log:{job=\"nextcloud_logs\"}"
+    level=info ts=2024-10-09T16:07:52.324776867Z caller=filetarget.go:313 msg="watching new directory" directory=/opt/nc_data
+    level=info ts=2024-10-09T16:07:52.324924594Z caller=tailer.go:145 component=tailer msg="tail routine: started" path=/opt/nc_data/nextcloud.log
+    ts=2024-10-09T16:07:52.325342587Z caller=log.go:168 level=info msg="Seeked /opt/nc_data/nextcloud.log - &{Offset:0 Whence:0}"
+    level=info ts=2024-10-09T16:08:08.795876082Z caller=filetargetmanager.go:181 msg="received file watcher event" name=/opt/nc_data/htaccesstest.txt op=CREATE
+    level=info ts=2024-10-09T16:08:09.933028974Z caller=filetargetmanager.go:181 msg="received file watcher event" name=/opt/nc_data/htaccesstest.txt op=CREATE
+    level=info ts=2024-10-09T16:08:11.237982762Z caller=filetargetmanager.go:181 msg="received file watcher event" name=/opt/nc_data/htaccesstest.txt op=CREATE
+    level=info ts=2024-10-09T16:08:12.232210628Z caller=filetargetmanager.go:181 msg="received file watcher event" name=/opt/nc_data/htaccesstest.txt op=CREATE
+    level=info ts=2024-10-09T16:08:12.241750814Z caller=filetargetmanager.go:181 msg="received file watcher event" name=/opt/nc_data/owncloud.db op=CREATE
+    level=info ts=2024-10-09T16:08:12.248563411Z caller=filetargetmanager.go:181 msg="received file watcher event" name=/opt/nc_data/owncloud.db-journal op=CREATE
+    level=info ts=2024-10-09T16:08:12.251760771Z caller=filetargetmanager.go:181 msg="received file watcher event" name=/opt/nc_data/owncloud.db-wal op=CREATE
+    level=info ts=2024-10-09T16:08:12.25180699Z caller=filetargetmanager.go:181 msg="received file watcher event" name=/opt/nc_data/owncloud.db-shm op=CREATE
+    level=info ts=2024-10-09T16:08:13.283240092Z caller=filetargetmanager.go:181 msg="received file watcher event" name=/opt/nc_data/htaccesstest.txt op=CREATE
+    level=info ts=2024-10-09T16:08:15.712192361Z caller=filetargetmanager.go:181 msg="received file watcher event" name=/opt/nc_data/.ocdata op=CREATE
+    level=info ts=2024-10-09T16:08:16.179255097Z caller=filetargetmanager.go:181 msg="received file watcher event" name=/opt/nc_data/admin op=CREATE
+    level=info ts=2024-10-09T16:08:34.460022768Z caller=filetargetmanager.go:181 msg="received file watcher event" name=/opt/nc_data/owncloud.db-wal op=CREATE
+    level=info ts=2024-10-09T16:08:34.460176421Z caller=filetargetmanager.go:181 msg="received file watcher event" name=/opt/nc_data/owncloud.db-shm op=CREATE
+    level=info ts=2024-10-09T16:08:34.593569675Z caller=filetargetmanager.go:181 msg="received file watcher event" name=/opt/nc_data/appdata_ocredlboee6x op=CREATE
+    level=info ts=2024-10-09T16:08:35.43560809Z caller=filetargetmanager.go:181 msg="received file watcher event" name=/opt/nc_data/owncloud.db-wal op=CREATE
+    level=info ts=2024-10-09T16:08:35.435656063Z caller=filetargetmanager.go:181 msg="received file watcher event" name=/opt/nc_data/owncloud.db-shm op=CREATE
+    ```
+
+    </details><br>
+
+    *Как видно из логов, ожидаемая строка присутствует*
