@@ -259,11 +259,32 @@
               priority: DISASTER
 ```
 
+   <details>
+   <summary>Изображение</summary>
+
+   ![браузер](images/1.png)
+   </details><br>
+
 3. Чтобы Zabbix и Nextcloud могли общаться по своим коротким именам внутри докеровской сети, в некстклауде необходимо “разрешить” это имя.
+    <details>
+    <summary>Изображение</summary>
+
+    ![браузер](images/2.png)
+    </details><br>
 
 4. Добавляем хоста.
+    <details>
+    <summary>Изображение</summary>
 
+    ![браузер](images/3.png)
+    </details><br>
+    
 5. Переходим к мониторингу.
+    <details>
+    <summary>Изображение</summary>
+
+    ![браузер](images/4.png)
+    </details><br>
 
 
  ## Часть 3: Визуализация
@@ -272,7 +293,7 @@
 
 2. Активируем Zabbix в Grafana.
 
-3. одключаем Loki к Grafana.
+3. Подключаем Loki к Grafana.
 
 4. Сохраняем подключение.
 
