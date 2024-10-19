@@ -210,3 +210,60 @@
     </details><br>
 
     *Как видно из логов, ожидаемая строка присутствует*
+
+
+ ## Часть 2: Мониторинг
+ 
+1. Теперь настраиваем Zabbix. Подключаемся к веб-интерфейсу (http://localhost:8082 или свой выбранный порт из композ файла)
+
+2. В разделе Data collection → Templates делаем Import кастомного шаблона (темплейта) для мониторинга nextcloud.
+```yml
+   zabbix_export:
+  version: '6.4'
+  template_groups:
+    - uuid: a571c0d144b14fd4a87a9d9b2aa9fcd6
+      name: Templates/Applications
+  templates:
+    - uuid: a615dc391a474a9fb24bee9f0ae57e9e
+      template: 'Test ping template'
+      name: 'Test ping template'
+      groups:
+        - name: Templates/Applications
+      items:
+        - uuid: a987740f59d54b57a9201f2bc2dae8dc
+          name: 'Nextcloud: ping service'
+          type: HTTP_AGENT
+          key: nextcloud.ping
+          value_type: TEXT
+          trends: '0'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.body.maintenance
+            - type: STR_REPLACE
+              parameters:
+                - 'false'
+                - healthy
+            - type: STR_REPLACE
+              parameters:
+                - 'true'
+                - unhealthy
+          url: 'http://{HOST.HOST}/status.php'
+          output_format: JSON
+          triggers:
+            - uuid: a904f3e66ca042a3a455bcf1c2fc5c8e
+              expression: 'last(/Test ping template/nextcloud.ping)="unhealthy"'
+              recovery_mode: RECOVERY_EXPRESSION
+              recovery_expression: 'last(/Test ping template/nextcloud.ping)="healthy"'
+              name: 'Nextcloud is in maintenance mode'
+              priority: DISASTER
+```
+
+3. Чтобы Zabbix и Nextcloud могли общаться по своим коротким именам внутри докеровской сети, в некстклауде необходимо “разрешить” это имя.
+
+4. Добавляем хоста.
+
+5. Переходим к мониторингу.
+
+
+ ## Часть 3: Визуализация
