@@ -290,20 +290,69 @@
  ## Часть 3: Визуализация
 
 1. В терминале выполняем команду `docker exec -it grafana bash -c "grafana cli plugins install alexanderzobnin-zabbix-app"`, затем `docker restart grafana`.
+    <details>
+    <summary>Изображение</summary>
 
-2. Активируем Zabbix в Grafana.
+    ![браузер](images/5.png)
+    </details><br>
+
+2. Затем активируем Zabbix в Grafana.
 
 3. Подключаем Loki к Grafana.
+    <details>
+    <summary>Изображение</summary>
 
+    ![браузер](images/6.png)
+    </details><br>
+    
 4. Сохраняем подключение.
+    <details>
+    <summary>Изображение</summary>
 
+    ![браузер](images/7.png)
+    </details><br>
+    
 5. Все так же делаем с Zabbix. В качестве URL указываем `http://zabbix-front:8080/api_jsonrpc.php`.
+    <details>
+    <summary>Изображение</summary>
 
+    ![браузер](images/8.png)
+    </details><br>
+    
 6. Переходим в Explore и наблюдаем наши логи.
+    <details>
+    <summary>Изображение</summary>
 
+    ![браузер](images/11.png)
+    </details>
+    
+    <details>
+    <summary>Изображение</summary>
+
+    ![браузер](images/12.png)
+    </details>
+    <br>
+    
 7. То же самое с забиксом, при выставлении всех фильтров.
+    <details>
+    <summary>Изображение</summary>
 
+    ![браузер](images/13.png)
+    </details><br>
 
  ## Задание
 
-Дашборды:
+1. Дашборды:
+    <details>
+    <summary>Изображение</summary>
+
+    ![браузер](images/14.png)
+    </details><br>
+
+2. Вопросы:
+   *Чем SLO отличается от SLA?
+
+   *Чем отличается инкрементальный бэкап от дифференциального?
+
+   *В чем разница между мониторингом и observability?
+   
