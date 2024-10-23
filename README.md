@@ -210,3 +210,156 @@
     </details><br>
 
     *Как видно из логов, ожидаемая строка присутствует*
+
+
+ ## Часть 2: Мониторинг
+ 
+1. Теперь настраиваем Zabbix. Подключаемся к веб-интерфейсу (http://localhost:8082 или свой выбранный порт из композ файла).
+
+2. В разделе Data collection → Templates делаем Import кастомного шаблона (темплейта) для мониторинга nextcloud.
+```yml
+   zabbix_export:
+  version: '6.4'
+  template_groups:
+    - uuid: a571c0d144b14fd4a87a9d9b2aa9fcd6
+      name: Templates/Applications
+  templates:
+    - uuid: a615dc391a474a9fb24bee9f0ae57e9e
+      template: 'Test ping template'
+      name: 'Test ping template'
+      groups:
+        - name: Templates/Applications
+      items:
+        - uuid: a987740f59d54b57a9201f2bc2dae8dc
+          name: 'Nextcloud: ping service'
+          type: HTTP_AGENT
+          key: nextcloud.ping
+          value_type: TEXT
+          trends: '0'
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - $.body.maintenance
+            - type: STR_REPLACE
+              parameters:
+                - 'false'
+                - healthy
+            - type: STR_REPLACE
+              parameters:
+                - 'true'
+                - unhealthy
+          url: 'http://{HOST.HOST}/status.php'
+          output_format: JSON
+          triggers:
+            - uuid: a904f3e66ca042a3a455bcf1c2fc5c8e
+              expression: 'last(/Test ping template/nextcloud.ping)="unhealthy"'
+              recovery_mode: RECOVERY_EXPRESSION
+              recovery_expression: 'last(/Test ping template/nextcloud.ping)="healthy"'
+              name: 'Nextcloud is in maintenance mode'
+              priority: DISASTER
+```
+
+   <details>
+   <summary>Изображение</summary>
+
+   ![браузер](images/1.png)
+   </details><br>
+
+3. Чтобы Zabbix и Nextcloud могли общаться по своим коротким именам внутри докеровской сети, в некстклауде необходимо “разрешить” это имя.
+    <details>
+    <summary>Изображение</summary>
+
+    ![браузер](images/2.png)
+    </details><br>
+
+4. Добавляем хоста.
+    <details>
+    <summary>Изображение</summary>
+
+    ![браузер](images/3.png)
+    </details><br>
+    
+5. Переходим к мониторингу.
+    <details>
+    <summary>Изображение</summary>
+
+    ![браузер](images/4.png)
+    </details><br>
+
+
+ ## Часть 3: Визуализация
+
+1. В терминале выполняем команду `docker exec -it grafana bash -c "grafana cli plugins install alexanderzobnin-zabbix-app"`, затем `docker restart grafana`.
+    <details>
+    <summary>Изображение</summary>
+
+    ![браузер](images/5.png)
+    </details><br>
+
+2. Затем активируем Zabbix в Grafana.
+
+3. Подключаем Loki к Grafana.
+    <details>
+    <summary>Изображение</summary>
+
+    ![браузер](images/6.png)
+    </details><br>
+    
+4. Сохраняем подключение.
+    <details>
+    <summary>Изображение</summary>
+
+    ![браузер](images/7.png)
+    </details><br>
+    
+5. Все так же делаем с Zabbix. В качестве URL указываем `http://zabbix-front:8080/api_jsonrpc.php`.
+    <details>
+    <summary>Изображение</summary>
+
+    ![браузер](images/8.png)
+    </details><br>
+    
+6. Переходим в Explore и наблюдаем наши логи.
+    <details>
+    <summary>Изображение</summary>
+
+    ![браузер](images/11.png)
+    </details>
+    
+    <details>
+    <summary>Изображение</summary>
+
+    ![браузер](images/12.png)
+    </details>
+    <br>
+    
+7. То же самое с забиксом, при выставлении всех фильтров.
+    <details>
+    <summary>Изображение</summary>
+
+    ![браузер](images/13.png)
+    </details><br>
+
+ ## Задание
+
+1. Дашборды:
+    <details>
+    <summary>Изображение</summary>
+
+    ![браузер](images/14.png)
+    </details><br>
+
+2. Вопросы:
+   
+   *Чем SLO отличается от SLA?*
+   
+   SLA — это более формальное и юридически обязывающее соглашение, тогда как SLO — это целевые показатели, на которые     можно ориентироваться для оценки производительности сервиса. Оба эти инструмента помогают в управлении ожиданиями и    обеспечении качества обслуживания.
+
+   *Чем отличается инкрементальный бэкап от дифференциального?*
+   
+   Инкрементальный - создаёт копии только тех данных, которые изменились с момента последнего бэкапа.
+   Дифференциальный - создаёт копии всех изменённых данных с момента последнего полного бэкапа.
+   
+   *В чем разница между мониторингом и observability?*
+   
+   Мониторинг — это часть observability. Если мониторинг позволяет отслеживать состояние системы, то observability дает возможность понять, почему система ведет себя именно так.
