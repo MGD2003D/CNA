@@ -33,14 +33,14 @@
    <details>
    <summary>Изображение</summary>
 
-   ![браузер](lab2/images/1.png)
+   ![браузер](images/1.png)
    </details><br>
 
 5. Пробуем выполнить команду посложнее на нашем клиенте.
    <details>
    <summary>Изображение</summary>
 
-   ![браузер](lab2/images/2.png)
+   ![браузер](images/2.png)
    </details><br>
 
 
@@ -52,7 +52,7 @@
    <details>
    <summary>Изображение</summary>
 
-   ![браузер](lab2/images/3.png)
+   ![браузер](images/3.png)
    </details><br>
 
 2.  
