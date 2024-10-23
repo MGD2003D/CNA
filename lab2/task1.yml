@@ -13,7 +13,7 @@
       failed_when: "'test_file_content' not in file_content_check.stdout"
 
     - name: Change file content
-      shell: 'echo new_test_content > {{ ansible_env.HOME }}/test.txt'
+      shell: 'echo new_test_file_content > {{ ansible_env.HOME }}/test.txt'
       when: file_content_check is succeeded
 
     - name: Delete the file
