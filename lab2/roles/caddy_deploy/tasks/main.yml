@@ -32,3 +32,22 @@
     name: caddy
     update_cache: yes
     state: present
+
+# Создание директории и копирование файлов
+- name: Create web root directory
+  file:
+    path: /var/www/html
+    state: directory
+    mode: '0755'
+
+- name: Copy custom index.html to web root
+  copy:
+    src: index.html
+    dest: /var/www/html/index.html
+    mode: '0644'
+
+- name: Deploy custom Caddyfile
+  template:
+    src: Caddyfile.j2
+    dest: /etc/caddy/Caddyfile
+    mode: '0644'

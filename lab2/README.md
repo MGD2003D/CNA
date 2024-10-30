@@ -118,7 +118,7 @@
 4. Создаю файл конфигурации `caddy_deploy`, где указываю нужные хосты и роли
    <details>
    <summary>Содержимое файла</summary>
-   
+
    ```yml
    ---
    - name: Install and configure Caddy webserver  # Любое описание
@@ -132,6 +132,47 @@
    </details>
 <br>
 
-5. Запускаю плейбук командой `ansible-playbook caddy_deploy.yml`
+5. Запускаю плейбук командой `ansible-playbook caddy_deploy.yml`. Проверяю через `service caddy status`
 
    ![плейбук_работает](images/4.png)
+6. Расширение конфига любым функционалом
+   1. Замена стартовой страницы
+      1. в `roles/caddy_deploy/files` помещаю простой `index.html`
+         ```html
+         <html>
+         <body>
+         <h1>Hello World</h1>
+         </body>
+         </html>
+         ```
+      2. Добавляю к `main.yml`
+         ```yml
+         - name: Create web root directory
+         file:
+            path: /var/www/html
+            state: directory
+            mode: '0755'
+
+         - name: Copy custom index.html to web root
+         copy:
+            src: index.html
+            dest: /var/www/html/index.html
+            mode: '0644'
+
+         - name: Deploy custom Caddyfile
+         template:
+            src: Caddyfile.j2
+            dest: /etc/caddy/Caddyfile
+            mode: '0644'
+
+         ```
+      3. Создаю `Caddyfile.j2` в `roles/caddy_deploy/templates`
+         ```
+         :80 {
+            root * /var/www/html
+            file_server
+         }
+         ```
+      4. Перезапускаю плейбук `sudo systemctl restart caddy`
+      5. Проверяю http://localhost
+      ![hello_world](images/5.png)
