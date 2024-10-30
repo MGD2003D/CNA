@@ -118,7 +118,8 @@
 4. Создаю файл конфигурации `caddy_deploy`, где указываю нужные хосты и роли
    <details>
    <summary>Содержимое файла</summary>
-
+   
+   ```yml
    ---
    - name: Install and configure Caddy webserver  # Любое описание
    hosts: my_servers  # хосты из файла inventory/hosts, где будем выполнять наш плейбук
@@ -126,6 +127,7 @@
    become: true
    roles:
       - caddy_deploy  # собственно, роль для выполнения
+   ```
 
    </details>
 <br>
