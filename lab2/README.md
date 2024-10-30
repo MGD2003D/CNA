@@ -55,4 +55,61 @@
    ![браузер](images/3.png)
    </details><br>
 
-2.  
+2.  Инициализация конфигурационного дерева
+      ```
+      └── caddy_deploy
+         ├── defaults
+         │   └── main.yml
+         ├── files
+         ├── handlers
+         │   └── main.yml
+         ├── meta
+         │   └── main.yml
+         ├── README.md
+         ├── tasks
+         │   └── main.yml
+         ├── templates
+         ├── tests
+         │   ├── inventory
+         │   └── test.yml
+         └── vars
+            └── main.yml
+
+      ```
+3. Наполнение `roles/caddy_deploy/tasks/main.yml`. Содержит описание шагов, которые будут выполняться в плейбуке
+   <details>
+   <summary>Содержимое файла</summary>
+
+   ```yml
+   ---
+   # tasks file for caddy_deploy
+   - name: Install prerequisites
+   apt:
+   pkg:
+   - debian-keyring
+   - debian-archive-keyring
+   - apt-transport-https
+   - curl
+   - name: Add key for Caddy repo
+   apt_key:
+   url: https://dl.cloudsmith.io/public/caddy/stable/gpg.key
+   state: present
+   keyring: /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+   - name: add Caddy repo
+   apt_repository:
+   repo: "deb [signed-by=/usr/share/keyrings/caddy-stable-archive-keyring.gpg] https://dl.cloudsmith.io/public/caddy/stable/deb/debian any-version main"
+   state: present
+   filename: caddy-stable
+   - name: add Caddy src repo
+   apt_repository:
+   repo: "deb-src [signed-by=/usr/share/keyrings/caddy-stable-archive-keyring.gpg] https://dl.cloudsmith.io/public/caddy/stable/deb/debian any-version main"
+   state: present
+   filename: caddy-stable
+   - name: Install Caddy webserver
+   apt:
+   name: caddy
+   update_cache: yes
+   state: present   
+   ```
+
+   </details>
