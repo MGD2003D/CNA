@@ -113,3 +113,23 @@
    ```
 
    </details>
+<br>
+
+4. Создаю файл конфигурации `caddy_deploy`, где указываю нужные хосты и роли
+   <details>
+   <summary>Содержимое файла</summary>
+
+   ---
+   - name: Install and configure Caddy webserver  # Любое описание
+   hosts: my_servers  # хосты из файла inventory/hosts, где будем выполнять наш плейбук
+   connection: local  # аналог -c local, но для плейбуков
+   become: true
+   roles:
+      - caddy_deploy  # собственно, роль для выполнения
+
+   </details>
+<br>
+
+5. Запускаю плейбук командой `ansible-playbook caddy_deploy.yml`
+
+   ![плейбук_работает](images/4.png)
