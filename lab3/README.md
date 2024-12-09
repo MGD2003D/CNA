@@ -13,21 +13,21 @@
    <summary>Изображение</summary>
 
    ![браузер](screenshots/1.png)
-   </details>
+   </details><br>
 
-   details>
+   <details>
    <summary>Изображение</summary>
 
    ![браузер](screenshots/2.png)
-   </details>
+   </details><br>
 
-   details>
+   <details>
    <summary>Изображение</summary>
 
    ![браузер](screenshots/3.png)
-   </details>
+   </details><br>
 
-   details>
+   <details>
    <summary>Изображение</summary>
 
    ![браузер](screenshots/4.png)
