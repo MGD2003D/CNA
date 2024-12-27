@@ -33,6 +33,16 @@
     update_cache: yes
     state: present
 
+- name: Create config file
+  template:
+    src: templates/Caddyfile.j2  # Откуда берем
+    dest: /etc/caddy/Caddyfile  # Куда кладем
+
+- name: Reload with new config
+  service:
+    name: caddy
+    state: reloaded
+
 # Создание директории и копирование файлов
 - name: Create web root directory
   file:
